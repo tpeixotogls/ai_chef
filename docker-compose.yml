@@ -1,0 +1,31 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ai_chef
+      POSTGRES_PASSWORD: ai_chef
+      POSTGRES_DB: ai_chef
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: npm run dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgresql://ai_chef:ai_chef@db:5432/ai_chef
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: development-secret
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+volumes:
+  postgres_data:
