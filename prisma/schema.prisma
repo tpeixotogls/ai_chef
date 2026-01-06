@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  TENANT_EDITOR
+  USER
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            User[]
+  ingredients      Ingredient[]
+  utensils         Utensil[]
+  recipes          Recipe[]
+  pantryItems      UserPantryItem[]
+  userUtensils     UserUtensil[]
+  recipeItems      RecipeIngredient[]
+  recipeUtensils   RecipeUtensil[]
+  recipeSteps      RecipeStep[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  tenantId     String
+  email        String
+  name         String
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant       Tenant @relation(fields: [tenantId], references: [id])
+  pantryItems  UserPantryItem[]
+  utensils     UserUtensil[]
+
+  @@unique([tenantId, email])
+}
+
+model Ingredient {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  pantry    UserPantryItem[]
+  recipes   RecipeIngredient[]
+
+  @@unique([tenantId, name])
+}
+
+model Utensil {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  userLinks UserUtensil[]
+  recipes   RecipeUtensil[]
+
+  @@unique([tenantId, name])
+}
+
+model UserPantryItem {
+  id           String   @id @default(uuid())
+  tenantId     String
+  userId       String
+  ingredientId String
+  quantity     Float?
+  unit         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+  ingredient  Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([userId, ingredientId])
+}
+
+model UserUtensil {
+  id         String   @id @default(uuid())
+  tenantId   String
+  userId     String
+  utensilId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  user     User    @relation(fields: [userId], references: [id])
+  utensil  Utensil @relation(fields: [utensilId], references: [id])
+
+  @@unique([userId, utensilId])
+}
+
+model Recipe {
+  id          String   @id @default(uuid())
+  tenantId    String
+  title       String
+  description String
+  servings    Int
+  timeMinutes Int
+  difficulty  String
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant       Tenant @relation(fields: [tenantId], references: [id])
+  ingredients  RecipeIngredient[]
+  utensils     RecipeUtensil[]
+  steps        RecipeStep[]
+}
+
+model RecipeIngredient {
+  id           String   @id @default(uuid())
+  tenantId     String
+  recipeId     String
+  ingredientId String
+  optional     Boolean  @default(false)
+  quantity     Float?
+  unit         String?
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  recipe      Recipe     @relation(fields: [recipeId], references: [id])
+  ingredient  Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([recipeId, ingredientId])
+}
+
+model RecipeUtensil {
+  id         String   @id @default(uuid())
+  tenantId   String
+  recipeId   String
+  utensilId  String
+  optional   Boolean  @default(false)
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  recipe   Recipe  @relation(fields: [recipeId], references: [id])
+  utensil  Utensil @relation(fields: [utensilId], references: [id])
+
+  @@unique([recipeId, utensilId])
+}
+
+model RecipeStep {
+  id            String   @id @default(uuid())
+  tenantId      String
+  recipeId      String
+  stepNumber    Int
+  instruction   String
+  timerSeconds  Int?
+  temperatureC  Int?
+  speed         String?
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id])
+  recipe  Recipe @relation(fields: [recipeId], references: [id])
+
+  @@unique([recipeId, stepNumber])
+}
