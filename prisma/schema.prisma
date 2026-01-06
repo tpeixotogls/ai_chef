@@ -21,10 +21,15 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users        User[]
-  ingredients  Ingredient[]
-  utensils     Utensil[]
-  recipes      Recipe[]
+  users            User[]
+  ingredients      Ingredient[]
+  utensils         Utensil[]
+  recipes          Recipe[]
+  pantryItems      UserPantryItem[]
+  userUtensils     UserUtensil[]
+  recipeItems      RecipeIngredient[]
+  recipeUtensils   RecipeUtensil[]
+  recipeSteps      RecipeStep[]
 }
 
 model User {
